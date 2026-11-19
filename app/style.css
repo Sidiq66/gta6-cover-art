@@ -1,0 +1,198 @@
+@font-face {
+  font-family: "Anton";
+  src: url("./fonts/Anton-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #0b0b10;
+  color: #f2f0fa;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 302px 1fr;
+  min-height: 100vh;
+}
+
+/* ---------- control rail ---------- */
+
+.controls {
+  padding: 22px 20px 28px;
+  background: linear-gradient(180deg, #12101d 0%, #0d0b16 100%);
+  border-right: 1px solid #262040;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.controls h1 {
+  margin: 0 0 4px;
+  font-family: "Anton", sans-serif;
+  font-size: 34px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.controls h1 span { color: #ff2e88; }
+
+.tagline {
+  margin: 0 0 18px;
+  color: #a79fd0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.controls h2 {
+  margin: 18px 0 8px;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #22d3ee;
+}
+
+.controls label {
+  display: block;
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #cfc9ec;
+}
+
+.controls input[type="text"],
+.controls select {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 8px 10px;
+  background: #17142a;
+  border: 1px solid #352d5e;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.controls input[type="text"]:focus,
+.controls select:focus { outline: 2px solid #ff2e88; outline-offset: 0; }
+
+.file-pick {
+  display: block;
+  padding: 9px 12px;
+  background: #ff2e88;
+  border-radius: 6px;
+  color: #ffffff;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.file-pick:hover { background: #ff4d9c; }
+.file-pick input { display: none; }
+
+.sample-row,
+.layout-row { display: flex; gap: 8px; }
+
+.sample-btn,
+.layout-btn {
+  flex: 1;
+  padding: 8px 4px;
+  background: #17142a;
+  border: 1px solid #352d5e;
+  border-radius: 6px;
+  color: #cfc9ec;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sample-btn:hover,
+.layout-btn:hover { border-color: #22d3ee; color: #ffffff; }
+
+.layout-btn.is-active {
+  background: #22d3ee;
+  border-color: #22d3ee;
+  color: #06222b;
+  font-weight: 700;
+}
+
+.hint { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: #8f88b8; }
+.hint strong { color: #ffd7ef; }
+
+.slider input[type="range"] { width: 100%; margin-top: 6px; accent-color: #ff2e88; }
+
+.grade-ends {
+  display: flex;
+  justify-content: space-between;
+  float: right;
+  width: 55%;
+}
+
+.grade-ends em { font-style: normal; font-size: 11px; color: #8f88b8; }
+
+#export-btn {
+  width: 100%;
+  padding: 11px 12px;
+  background: linear-gradient(90deg, #ff2e88, #ff7a3d);
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+#export-btn:hover { filter: brightness(1.1); }
+
+#status { min-height: 18px; font-size: 12.5px; color: #7df0c8; }
+
+/* ---------- stage ---------- */
+
+.stage-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(900px 480px at 70% 18%, rgba(255, 46, 136, 0.13), transparent 60%),
+    radial-gradient(800px 500px at 25% 85%, rgba(34, 211, 238, 0.10), transparent 60%),
+    #0b0b10;
+}
+
+#stage {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 48px);
+  border: 1px solid #2c2650;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+  cursor: grab;
+  touch-action: none;
+}
+
+#stage:active { cursor: grabbing; }
+
+/* ---------- shot mode: cover only, centred full-height ---------- */
+
+body.shot-cover { margin: 0; background: #0b0b10; overflow: hidden; }
+body.shot-cover .app { display: block; min-height: 0; }
+body.shot-cover .controls { display: none; }
+body.shot-cover .stage-wrap { padding: 0; background: #0b0b10; display: block; }
+
+body.shot-cover #stage {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: 100vh;
+  height: 100dvh;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  border: none;
+  box-shadow: none;
+  cursor: default;
+}
