@@ -1,86 +1,88 @@
-// Colour grading for VICE FRAME.
+// The sunset-to-neon colour grade.
 //
-// The grade slider is one number, t: 0 is a warm sunset grade, 1 is a neon
-// grade. A photo is graded in two steps. First it is drawn onto an offscreen
-// canvas through a canvas filter (saturation, contrast, brightness), cover-
-// fitted to its panel's box with the panel's pan and zoom. Then, while the
-// panel's clip is active, applyGradeOverlay blends the tint gradients of the
-// two ends of the slider over the photo.
+// gradePhoto(image, grade) hands back an offscreen canvas holding the
+// picture with the grade baked in. The grade is a single number: 0 is a
+// warm sunset look — soft contrast, a little sepia, an amber-to-rose
+// wash — and 1 is the neon look — harder contrast, heavier saturation
+// and a magenta-against-cyan wash. Everything in between is a blend of
+// the two, driven off the one slider in the editor.
+
+const cache = new Map();
 
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
-function tint(r, g, b, a) {
-  return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
 }
 
-function mixTint(from, to, t) {
-  return tint(
-    lerp(from[0], to[0], t),
-    lerp(from[1], to[1], t),
-    lerp(from[2], to[2], t),
-    lerp(from[3], to[3], t),
+// The canvas filter string for a grade: each knob of the base correction
+// interpolated between its sunset and neon settings.
+export function gradeFilter(grade) {
+  const g = clamp01(grade);
+  const saturate = lerp(1.12, 1.38, g);
+  const contrast = lerp(1.05, 1.13, g);
+  const brightness = lerp(1.04, 0.99, g);
+  const sepia = lerp(0.22, 0.02, g);
+  return (
+    `saturate(${saturate.toFixed(3)}) ` +
+    `contrast(${contrast.toFixed(3)}) ` +
+    `brightness(${brightness.toFixed(3)}) ` +
+    `sepia(${sepia.toFixed(3)})`
   );
 }
 
-// Graded copies are cached per photo: a slider drag re-renders often, and the
-// same (photo, box, pan, zoom, grade) rarely needs drawing twice.
-const gradedCache = new WeakMap();
+// The tint washes, laid over the corrected picture in soft light so they
+// stain the highlights and shadows without flattening the photo.
+function wash(ctx, width, height, grade) {
+  const g = clamp01(grade);
+  ctx.save();
+  ctx.globalCompositeOperation = 'soft-light';
 
-function cacheKey(boxW, boxH, panX, panY, zoom, t) {
-  return [
-    Math.round(boxW),
-    Math.round(boxH),
-    Math.round(panX),
-    Math.round(panY),
-    zoom.toFixed(3),
-    Math.round(t * 40) / 40,
-  ].join('|');
+  if (g < 1) {
+    // Sunset: amber light up top sinking into a rose dusk at the foot.
+    const sunset = ctx.createLinearGradient(0, 0, 0, height);
+    sunset.addColorStop(0, 'rgb(255, 166, 66)');
+    sunset.addColorStop(0.55, 'rgb(255, 110, 90)');
+    sunset.addColorStop(1, 'rgb(214, 51, 132)');
+    ctx.globalAlpha = 0.55 * (1 - g);
+    ctx.fillStyle = sunset;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  if (g > 0) {
+    // Neon: magenta signage on the left against cyan on the right.
+    const neon = ctx.createLinearGradient(0, 0, width, 0);
+    neon.addColorStop(0, 'rgb(255, 0, 128)');
+    neon.addColorStop(0.5, 'rgb(120, 0, 255)');
+    neon.addColorStop(1, 'rgb(0, 200, 255)');
+    ctx.globalAlpha = 0.5 * g;
+    ctx.fillStyle = neon;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  ctx.restore();
 }
 
-// An offscreen canvas of boxW x boxH holding the photo, cover-fitted, panned
-// and zoomed, with the grade's filter applied.
-export function gradedPhotoCanvas(img, boxW, boxH, panX, panY, zoom, t) {
-  let perPhoto = gradedCache.get(img);
-  if (!perPhoto) {
-    perPhoto = new Map();
-    gradedCache.set(img, perPhoto);
-  }
-  const key = cacheKey(boxW, boxH, panX, panY, zoom, t);
-  const cached = perPhoto.get(key);
-  if (cached) return cached;
+export function gradePhoto(image, grade) {
+  // Round the grade so dragging the slider reuses nearby cached frames
+  // instead of grading the same photograph again for every pixel moved.
+  const step = Math.round(clamp01(grade) * 50) / 50;
+  const key = `${image.src}|${step}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
 
   const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(boxW));
-  canvas.height = Math.max(1, Math.round(boxH));
-  const g = canvas.getContext('2d');
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const ctx = canvas.getContext('2d');
+  ctx.filter = gradeFilter(step);
+  ctx.drawImage(image, 0, 0);
+  ctx.filter = 'none';
+  wash(ctx, canvas.width, canvas.height, step);
 
-  const scale = Math.max(boxW / img.naturalWidth, boxH / img.naturalHeight) * zoom;
-  const drawnW = img.naturalWidth * scale;
-  const drawnH = img.naturalHeight * scale;
-  const dx = (boxW - drawnW) / 2 + panX;
-  const dy = (boxH - drawnH) / 2 + panY;
-
-  g.filter =
-    `saturate(${lerp(1.28, 1.6, t).toFixed(3)}) ` +
-    `contrast(${lerp(1.07, 1.2, t).toFixed(3)}) ` +
-    `brightness(${lerp(1.03, 0.97, t).toFixed(3)})`;
-  g.drawImage(img, dx, dy, drawnW, drawnH);
-  g.filter = 'none';
-
-  if (perPhoto.size > 60) perPhoto.clear();
-  perPhoto.set(key, canvas);
+  cache.set(key, canvas);
+  if (cache.size > 24) cache.clear();
   return canvas;
-}
-
-// The tint wash laid over a graded photo, inside the panel's clip: a coloured
-// glow at the top, a deep dusk at the bottom, blended sunset -> neon by t.
-export function applyGradeOverlay(ctx, box, t) {
-  const grad = ctx.createLinearGradient(0, box.y, 0, box.y + box.h);
-  grad.addColorStop(0, mixTint([255, 138, 42, 0.17], [0, 238, 255, 0.15], t));
-  grad.addColorStop(0.42, 'rgba(10, 6, 20, 0)');
-  grad.addColorStop(1, mixTint([122, 18, 142, 0.3], [255, 0, 148, 0.33], t));
-  ctx.fillStyle = grad;
-  ctx.fillRect(box.x, box.y, box.w, box.h);
 }

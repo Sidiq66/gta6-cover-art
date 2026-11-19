@@ -3,66 +3,70 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VICE FRAME — Multi-Panel Cover Maker</title>
-<link rel="stylesheet" href="./style.css">
+<title>VICE FRAME — slanted multi-panel cover maker</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app">
-  <section class="controls">
-    <h1>Vice <span>Frame</span></h1>
+<div class="app">
+  <aside class="sidebar">
+    <h1 class="logo">VICE <span>FRAME</span></h1>
     <p class="tagline">Slanted multi-panel cover art from your photos, in a sunset-to-neon grade.</p>
 
-    <h2>Photo</h2>
-    <label class="file-pick">Open a photo
-      <input id="photo-file" type="file" accept="image/*">
-    </label>
-    <div class="sample-row" role="group" aria-label="Sample photos">
-      <button type="button" class="sample-btn" data-sample="pier">Pier</button>
-      <button type="button" class="sample-btn" data-sample="boulevard">Boulevard</button>
-      <button type="button" class="sample-btn" data-sample="beach">Beach</button>
-    </div>
-    <p class="hint">The photo fills the selected panel. Click a panel on the cover to select it, drag on the cover to pan its photo.</p>
+    <section>
+      <h2>Photo</h2>
+      <label class="open-photo" for="photo-file">Open a photo</label>
+      <input id="photo-file" type="file" accept="image/*" hidden>
+      <div class="button-row">
+        <button type="button" data-sample="pier">Pier</button>
+        <button type="button" data-sample="boulevard">Boulevard</button>
+        <button type="button" data-sample="beach">Beach</button>
+      </div>
+      <p class="hint">The photo fills the selected panel. Click a panel on the cover to select it, drag on the cover to pan its photo.</p>
+    </section>
 
-    <h2>Layout</h2>
-    <div class="layout-row" role="group" aria-label="Panel layout">
-      <button type="button" class="layout-btn is-active" data-layout="triptych">Triptych</button>
-      <button type="button" class="layout-btn" data-layout="quad">Quad</button>
-      <button type="button" class="layout-btn" data-layout="duo">Duo</button>
-    </div>
-    <p class="hint">Selected panel: <strong id="panel-label">Panel 1</strong></p>
+    <section>
+      <h2>Layout</h2>
+      <div class="button-row">
+        <button type="button" data-layout="triptych" class="active">Triptych</button>
+        <button type="button" data-layout="quad">Quad</button>
+        <button type="button" data-layout="duo">Duo</button>
+      </div>
+      <p class="hint">Selected panel: <span id="selected-panel">Panel 1</span></p>
+    </section>
 
-    <h2>Frame</h2>
-    <label class="slider">Zoom
-      <input id="zoom" type="range" min="1" max="2.6" step="0.01" value="1.15">
-    </label>
-    <label class="slider">Grade <span class="grade-ends"><em>Sunset</em><em>Neon</em></span>
-      <input id="grade" type="range" min="0" max="100" step="1" value="35">
-    </label>
+    <section>
+      <h2>Frame</h2>
+      <label class="field-label" for="zoom">Zoom</label>
+      <input id="zoom" type="range" min="1" max="2.5" step="0.01" value="1">
+      <label class="field-label" for="grade">Grade</label>
+      <input id="grade" type="range" min="0" max="1" step="0.01" value="0.35">
+      <div class="range-ends"><span>Sunset</span><span>Neon</span></div>
+    </section>
 
-    <h2>Caption</h2>
-    <label>Title
-      <input id="title-input" type="text" maxlength="26" value="NEON SHORES">
-    </label>
-    <label>Subtitle
-      <input id="subtitle-input" type="text" maxlength="44" value="AN ORIGINAL VICE FRAME COVER">
-    </label>
+    <section>
+      <h2>Caption</h2>
+      <label class="field-label" for="caption-title">Title</label>
+      <input id="caption-title" type="text" value="NEON SHORES" maxlength="42" autocomplete="off">
+      <label class="field-label" for="caption-subtitle">Subtitle</label>
+      <input id="caption-subtitle" type="text" value="AN ORIGINAL VICE FRAME COVER" maxlength="60" autocomplete="off">
+    </section>
 
-    <h2>Export</h2>
-    <label>Size
-      <select id="size-select">
+    <section>
+      <h2>Export</h2>
+      <label class="field-label" for="size">Size</label>
+      <select id="size">
         <option value="1080x1080" selected>1080 × 1080 — square post</option>
         <option value="1080x1350">1080 × 1350 — portrait post</option>
         <option value="1920x1080">1920 × 1080 — wide banner</option>
       </select>
-    </label>
-    <button id="export-btn" type="button">Export PNG</button>
-    <p id="status" role="status"></p>
-  </section>
+      <button id="export" type="button">Export PNG</button>
+    </section>
+  </aside>
 
-  <section class="stage-wrap">
-    <canvas id="stage" width="1080" height="1080" aria-label="Cover preview"></canvas>
-  </section>
-</main>
-<script type="module" src="./src/main.js"></script>
+  <main class="stage">
+    <canvas id="cover" width="1080" height="1080"></canvas>
+  </main>
+</div>
+<script type="module" src="src/main.js"></script>
 </body>
 </html>

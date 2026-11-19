@@ -1,15 +1,8 @@
 # VICE FRAME
 
-An original multi-panel cover maker in the spirit of GTA-style poster art:
-your photos are sliced into slanted, white-bordered panels, graded from a
-warm sunset to a hot neon, captioned in bold poster lettering across the
-lower third, and exported as a PNG ready to post. No account, no uploads, no
-network — the app is plain static files and runs entirely in the browser.
+An original GTA-style cover art maker that runs entirely in the browser. Give it a photograph and it lays your pictures into the slanted multi-panel poster format — white seams, bold caption lettering, and a colour grade that slides from a warm Vice City sunset to full neon — then exports the finished cover as a PNG to share.
 
-VICE FRAME is an entry for make.fun's
-[gta6-cover-art-01](https://make.fun/bounty/gta6-cover-art-01) bounty. It is
-an original work: no Rockstar Games logos, artwork, characters or fonts are
-used anywhere in it.
+The design, the name and the artwork are all original to this entry; nothing here is a Rockstar Games logo, artwork or font.
 
 ## Run it
 
@@ -17,35 +10,32 @@ used anywhere in it.
 node serve.ts
 ```
 
-then open http://localhost:8080 in a desktop browser. (Any static file
-server pointed at `app/` works just as well; there is no build step.)
+then open <http://localhost:8080>. The server is a few lines of Node's standard library serving the static site in `app/` — there is no build step and the app itself works fully offline from those files.
 
-## Features
+## What it does
 
-- **Three panel layouts** — Triptych, Quad and Duo: leaning parallelogram
-  strips with white seams on a dark outline, like a poster collage.
-- **Your photos or the bundled samples** — open a photo from your machine
-  (it never leaves it) or start from the three built-in samples: pier,
-  boulevard and beach.
-- **Per-panel framing** — click a panel on the cover to select it, drag on
-  the cover to pan its photo, and zoom it with the slider.
-- **Sunset ↔ Neon grade** — one slider blends the colour grade: saturation
-  and contrast through a canvas filter, plus warm-amber-to-magenta tints at
-  the sunset end and cyan-to-hot-pink at the neon end.
-- **Poster caption** — a title in big outlined Anton lettering across the
-  lower third, with a smaller subtitle above it, over a dusk scrim.
-- **Three export sizes** — 1080 × 1080 (square post), 1080 × 1350
-  (portrait post) and 1920 × 1080 (wide banner), downloaded as a PNG at
-  exactly the chosen size.
-- **Screenshot scenes** — `?shot=cover` and `?shot=editor` URLs set up
-  fixed scenes (photo, layout, size, caption, grade) for taking the
-  screenshots in `screenshots/`.
+- **Multi-panel layouts** — Triptych (3 panels), Quad (4) and Duo (2), drawn as leaning parallelogram strips divided by dark gutters and white seams.
+- **Your photos, or the built-in samples** — open any photo from your device, or start from the three bundled scenes (Pier, Boulevard, Beach). The photo fills the selected panel; click a panel on the cover to select it and drag on the cover to pan its photo, with a per-panel zoom slider.
+- **Sunset-to-neon grade** — one slider blends a warm sunset correction and amber-rose wash into a saturated neon look with a magenta-cyan wash. The caption lettering follows the grade: cream at sunset, white-into-pink with an ice-blue subtitle at neon.
+- **Caption lettering** — a big uppercase title fitted to the cover's width with a smaller subtitle above it, set in the bundled Anton typeface with a heavy ink outline across the lower third.
+- **Post sizes** — export at 1080 × 1080 (square), 1080 × 1350 (portrait) or 1920 × 1080 (wide), downloaded as a PNG rendered at full resolution.
 
-## Notes
+## The samples and the typeface
 
-- The sample photos under `app/samples/` are AI-generated original images,
-  made for this entry and free to use.
-- The display font is **Anton** (`app/fonts/Anton-Regular.ttf`), licensed
-  under the SIL Open Font License 1.1 — see `app/fonts/OFL.txt`.
-- The code is licensed under the terms in the `LICENSE` file at the root of
-  this repository.
+The three sample photographs in `app/samples/` are AI-generated originals made for this entry. The caption typeface is Anton by Vernon Adams, bundled at `app/fonts/Anton-Regular.ttf` and licensed under the SIL Open Font License 1.1 — the full license text is in `app/fonts/OFL.txt`.
+
+## Layout of the entry
+
+- `app/index.html`, `app/style.css` — the editor page and its dark neon theme.
+- `app/src/panels.js` — the slanted panel geometry.
+- `app/src/grade.js` — the sunset-to-neon colour grade.
+- `app/src/render.js` — the cover renderer (panels, seams, caption).
+- `app/src/main.js` — the editor wiring.
+- `app/src/shots.js` — fixed `?shot=` scenes the screenshots were taken from.
+- `screenshots/` — the cover and editor screenshots.
+- `main.ts` — packages `app/` and `screenshots/` and writes the entry's dossier.
+- `serve.ts` — the local development server above.
+
+## License
+
+The code in this repository is released under the license in `LICENSE`. The Anton font remains under its own license, above.

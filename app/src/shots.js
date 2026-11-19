@@ -1,36 +1,83 @@
-// Fixed scenes for screenshots, driven by the page's query string:
+// Fixed scenes the entry screenshots are taken from.
 //
-//   ?shot=cover&photo=pier&layout=triptych&size=1920x1080&caption=NEON%20SHORES
-//     shows only the cover, centred full-height on a dark page.
-//   ?shot=editor&photo=boulevard&caption=VICE%20NIGHTS
-//     shows the editor with that sample loaded and the caption set.
+// ?shot=cover&photo=<name>&layout=<layout>&size=<WxH>&caption=<text>
+// strips the page down to the cover alone (the stylesheet does that off
+// the shot-cover body class): the named sample fills the first panel and
+// the remaining samples follow it in their usual order, wrapping around
+// a quad. An optional &grade=<0..1> parks the sunset-to-neon slider.
 //
-// `photo` names the sample the panels are filled from (samples/<photo>.jpg),
-// cycling through the other samples for the remaining panels; `subtitle` and
-// `grade` (0..1) are optional. Once the scene is painted — photos decoded,
-// the Anton font ready, two frames rendered — window.__shotReady is set.
+// ?shot=editor&photo=<name>&caption=<text> leaves the editor standing
+// with the samples loaded and the caption set, one panel selected.
+//
+// Both scenes raise window.__shotReady once the cover has genuinely
+// been painted, so a screenshot is never taken of a half-loaded page.
 
-const DEFAULT_SUBTITLE = 'AN ORIGINAL VICE FRAME COVER';
+export const SAMPLE_ORDER = ['pier', 'boulevard', 'beach'];
 
-export async function runShotMode(query, app) {
-  const mode = query.get('shot');
-  const photo = query.get('photo') ?? 'pier';
-  const title = query.get('caption') ?? 'NEON SHORES';
-  const subtitle = query.get('subtitle') ?? DEFAULT_SUBTITLE;
+export function samplePath(name) {
+  return `samples/${name}.jpg`;
+}
 
-  if (mode === 'cover') document.body.classList.add('shot-cover');
-  if (query.get('size')) app.setSize(query.get('size'));
-  if (query.get('layout')) app.setLayout(query.get('layout'));
-  const grade = Number.parseFloat(query.get('grade') ?? '');
-  if (Number.isFinite(grade)) app.setGrade(Math.min(1, Math.max(0, grade)));
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`could not load ${src}`));
+    img.src = src;
+  });
+}
 
-  await app.fillFrom(photo);
-  app.setCaption(title, subtitle);
-  await document.fonts.ready;
-  app.redraw(mode === 'cover');
+export function loadSample(name) {
+  return loadImage(samplePath(name));
+}
+
+// Which sample each panel starts from when a scene names one photo:
+// that photo first, then the rest in order, wrapping as needed.
+export function panelSamples(startName, count) {
+  const start = Math.max(0, SAMPLE_ORDER.indexOf(startName));
+  const names = [];
+  for (let i = 0; i < count; i++) {
+    names.push(SAMPLE_ORDER[(start + i) % SAMPLE_ORDER.length]);
+  }
+  return names;
+}
+
+function signalReady() {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       window.__shotReady = true;
     });
   });
+}
+
+// Runs whichever scene the URL asks for, driving the editor through the
+// small facade main.js hands over. Resolves true when a scene ran and
+// false for an ordinary visit, in which case nothing here has touched
+// the page.
+export async function runShotScene(params, editor) {
+  const shot = params.get('shot');
+  if (shot !== 'cover' && shot !== 'editor') return false;
+
+  const photo = params.get('photo') || 'pier';
+  const caption = params.get('caption');
+  const grade = params.get('grade');
+
+  if (shot === 'cover') {
+    document.body.classList.add('shot-cover');
+    editor.setShowSelection(false);
+  }
+  if (params.get('layout')) editor.setLayout(params.get('layout'));
+  if (params.get('size')) editor.setSize(params.get('size'));
+  if (caption !== null) editor.setTitle(caption);
+  if (grade !== null && !Number.isNaN(parseFloat(grade))) {
+    editor.setGrade(parseFloat(grade));
+  }
+
+  const names = panelSamples(photo, editor.panelCount());
+  const images = await Promise.all(names.map(loadSample));
+  images.forEach((img, i) => editor.setPanelPhoto(i, img));
+  editor.selectPanel(0);
+  await editor.render();
+  signalReady();
+  return true;
 }

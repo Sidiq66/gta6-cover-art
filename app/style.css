@@ -1,192 +1,280 @@
 @font-face {
-  font-family: "Anton";
-  src: url("./fonts/Anton-Regular.ttf") format("truetype");
+  font-family: 'Anton';
+  src: url('fonts/Anton-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  background: #0b0b10;
-  color: #f2f0fa;
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+:root {
+  --bg: #07070d;
+  --panel: #101018;
+  --panel-edge: #1f1f30;
+  --field: #151528;
+  --field-edge: #2b2d4d;
+  --text: #eef0ff;
+  --muted: #9aa0bd;
+  --pink: #ff2e7e;
+  --orange: #ff7a3c;
+  --cyan: #2fd8f2;
 }
 
-.app {
-  display: grid;
-  grid-template-columns: 302px 1fr;
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif;
   min-height: 100vh;
 }
 
-/* ---------- control rail ---------- */
-
-.controls {
-  padding: 22px 20px 28px;
-  background: linear-gradient(180deg, #12101d 0%, #0d0b16 100%);
-  border-right: 1px solid #262040;
-  overflow-y: auto;
-  max-height: 100vh;
+.app {
+  display: flex;
+  min-height: 100vh;
 }
 
-.controls h1 {
-  margin: 0 0 4px;
-  font-family: "Anton", sans-serif;
+/* --- control column ------------------------------------------------- */
+
+.sidebar {
+  width: 300px;
+  flex: 0 0 300px;
+  background: var(--panel);
+  border-right: 1px solid var(--panel-edge);
+  padding: 22px 20px 26px;
+  overflow-y: auto;
+}
+
+.logo {
+  font-family: 'Anton', 'Arial Narrow', sans-serif;
   font-size: 34px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 6px;
   color: #ffffff;
 }
 
-.controls h1 span { color: #ff2e88; }
+.logo span {
+  color: var(--pink);
+}
 
 .tagline {
-  margin: 0 0 18px;
-  color: #a79fd0;
+  margin: 0 0 20px;
   font-size: 13px;
   line-height: 1.45;
+  color: var(--muted);
 }
 
-.controls h2 {
-  margin: 18px 0 8px;
+.sidebar section {
+  margin-bottom: 22px;
+}
+
+.sidebar h2 {
+  margin: 0 0 10px;
   font-size: 11px;
+  font-weight: 700;
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: #22d3ee;
+  color: var(--cyan);
 }
 
-.controls label {
+.field-label {
   display: block;
-  margin: 0 0 10px;
-  font-size: 13px;
-  color: #cfc9ec;
+  margin: 10px 0 5px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
-.controls input[type="text"],
-.controls select {
+.hint {
+  margin: 9px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.open-photo {
   display: block;
-  width: 100%;
-  margin-top: 5px;
-  padding: 8px 10px;
-  background: #17142a;
-  border: 1px solid #352d5e;
+  text-align: center;
+  padding: 10px 12px;
   border-radius: 6px;
+  background: var(--pink);
   color: #ffffff;
   font-size: 14px;
-}
-
-.controls input[type="text"]:focus,
-.controls select:focus { outline: 2px solid #ff2e88; outline-offset: 0; }
-
-.file-pick {
-  display: block;
-  padding: 9px 12px;
-  background: #ff2e88;
-  border-radius: 6px;
-  color: #ffffff;
   font-weight: 600;
-  text-align: center;
   cursor: pointer;
 }
 
-.file-pick:hover { background: #ff4d9c; }
-.file-pick input { display: none; }
+.open-photo:hover {
+  background: #ff4d92;
+}
 
-.sample-row,
-.layout-row { display: flex; gap: 8px; }
+.button-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
 
-.sample-btn,
-.layout-btn {
+.button-row button {
   flex: 1;
   padding: 8px 4px;
-  background: #17142a;
-  border: 1px solid #352d5e;
   border-radius: 6px;
-  color: #cfc9ec;
+  border: 1px solid var(--field-edge);
+  background: var(--field);
+  color: var(--text);
   font-size: 13px;
   cursor: pointer;
 }
 
-.sample-btn:hover,
-.layout-btn:hover { border-color: #22d3ee; color: #ffffff; }
+.button-row button:hover {
+  border-color: var(--cyan);
+}
 
-.layout-btn.is-active {
-  background: #22d3ee;
-  border-color: #22d3ee;
+.button-row button.active {
+  background: #17b8d4;
+  border-color: #17b8d4;
   color: #06222b;
   font-weight: 700;
 }
 
-.hint { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: #8f88b8; }
-.hint strong { color: #ffd7ef; }
-
-.slider input[type="range"] { width: 100%; margin-top: 6px; accent-color: #ff2e88; }
-
-.grade-ends {
-  display: flex;
-  justify-content: space-between;
-  float: right;
-  width: 55%;
+.sidebar input[type='text'],
+.sidebar select {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--field-edge);
+  background: var(--field);
+  color: var(--text);
+  font-size: 14px;
 }
 
-.grade-ends em { font-style: normal; font-size: 11px; color: #8f88b8; }
-
-#export-btn {
-  width: 100%;
-  padding: 11px 12px;
-  background: linear-gradient(90deg, #ff2e88, #ff7a3d);
-  border: none;
-  border-radius: 6px;
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+.sidebar select {
   cursor: pointer;
 }
 
-#export-btn:hover { filter: brightness(1.1); }
+/* Sliders: a pink fill up to the thumb, driven by the --fill custom
+   property the editor updates as the value moves. */
+.sidebar input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--pink) var(--fill, 50%),
+    #262a45 var(--fill, 50%)
+  );
+  outline: none;
+  cursor: pointer;
+}
 
-#status { min-height: 18px; font-size: 12.5px; color: #7df0c8; }
+.sidebar input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #0c0c16;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.55);
+}
 
-/* ---------- stage ---------- */
+.sidebar input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #0c0c16;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.55);
+}
 
-.stage-wrap {
+.range-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+#export {
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--pink), var(--orange));
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#export:hover {
+  filter: brightness(1.1);
+}
+
+/* --- the stage ------------------------------------------------------ */
+
+.stage {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background:
-    radial-gradient(900px 480px at 70% 18%, rgba(255, 46, 136, 0.13), transparent 60%),
-    radial-gradient(800px 500px at 25% 85%, rgba(34, 211, 238, 0.10), transparent 60%),
-    #0b0b10;
+  padding: 28px;
+  background: radial-gradient(ellipse at 50% 42%, #171126 0%, var(--bg) 68%);
 }
 
-#stage {
+.stage canvas {
+  max-width: 100%;
+  max-height: calc(100vh - 56px);
+  max-height: calc(100dvh - 56px);
   width: auto;
   height: auto;
-  max-width: 100%;
-  max-height: calc(100vh - 48px);
-  border: 1px solid #2c2650;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+  border: 1px solid #262640;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
   cursor: grab;
   touch-action: none;
 }
 
-#stage:active { cursor: grabbing; }
+.stage canvas:active {
+  cursor: grabbing;
+}
 
-/* ---------- shot mode: cover only, centred full-height ---------- */
+/* --- cover-only mode for screenshots -------------------------------- */
+/* With ?shot=cover the editor chrome goes away and the canvas stands
+   alone: centred, as tall as the viewport, at the cover's own aspect
+   ratio, on the bare page colour. */
 
-body.shot-cover { margin: 0; background: #0b0b10; overflow: hidden; }
-body.shot-cover .app { display: block; min-height: 0; }
-body.shot-cover .controls { display: none; }
-body.shot-cover .stage-wrap { padding: 0; background: #0b0b10; display: block; }
+body.shot-cover {
+  background: #0b0b10;
+  overflow: hidden;
+}
 
-body.shot-cover #stage {
-  position: fixed;
-  inset: 0;
-  margin: auto;
+body.shot-cover .sidebar {
+  display: none;
+}
+
+body.shot-cover .app {
+  display: block;
+  height: 100vh;
+  height: 100dvh;
+}
+
+body.shot-cover .stage {
+  height: 100vh;
+  height: 100dvh;
+  padding: 0;
+  background: #0b0b10;
+}
+
+body.shot-cover .stage canvas {
   height: 100vh;
   height: 100dvh;
   width: auto;

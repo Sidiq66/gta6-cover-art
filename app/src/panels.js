@@ -1,67 +1,113 @@
 // Panel geometry for VICE FRAME covers.
 //
-// A layout is a set of slanted vertical strips that tile the canvas edge to
-// edge, the way poster collages slice a scene into leaning panels. Each layout
-// is described by where its dividers meet the top edge and the bottom edge of
-// the canvas, as fractions of the width: when the two rows differ, the strips
-// lean. A panel is the quad between two neighbouring dividers.
+// A cover is cut into vertical strips by divider lines that lean as they
+// fall: each divider starts a little to the right of where it ends, which
+// is what gives the panels their slanted, poster-collage look. The first
+// panel is closed by the left edge of the canvas and the last panel by
+// the right edge, so the strips always tile the whole frame exactly.
 
-const LAYOUTS = {
-  triptych: { top: [0.4, 0.71], bottom: [0.31, 0.63] },
-  quad: { top: [0.28, 0.53, 0.77], bottom: [0.22, 0.47, 0.71] },
-  duo: { top: [0.56], bottom: [0.44] },
+export const LAYOUTS = {
+  duo: 2,
+  triptych: 3,
+  quad: 4,
 };
 
-export function layoutNames() {
-  return Object.keys(LAYOUTS);
-}
+// How far a divider travels sideways over the full height of the cover,
+// as a fraction of the cover's width.
+const SLANT = 0.06;
 
 export function panelCount(layout) {
-  const spec = LAYOUTS[layout] ?? LAYOUTS.triptych;
-  return spec.top.length + 1;
+  return LAYOUTS[layout] ?? LAYOUTS.triptych;
 }
 
-// The polygons of a layout on a width x height canvas, left to right.
-// Each polygon is four [x, y] points: top-left, top-right, bottom-right,
-// bottom-left.
+// The interior divider lines of a layout. Each entry is the pair of x
+// coordinates where one divider crosses the top and the bottom edge.
+export function dividers(width, layout) {
+  const n = panelCount(layout);
+  const lean = (width * SLANT) / 2;
+  const lines = [];
+  for (let i = 1; i < n; i++) {
+    const base = (width * i) / n;
+    lines.push({ topX: base + lean, bottomX: base - lean });
+  }
+  return lines;
+}
+
+// Every panel's polygon, in order, as [x, y] points running clockwise
+// from the panel's top-left corner.
 export function panelPolygons(width, height, layout) {
-  const spec = LAYOUTS[layout] ?? LAYOUTS.triptych;
-  const tops = [0, ...spec.top, 1];
-  const bottoms = [0, ...spec.bottom, 1];
-  const polygons = [];
-  for (let i = 0; i < tops.length - 1; i += 1) {
-    polygons.push([
-      [tops[i] * width, 0],
-      [tops[i + 1] * width, 0],
-      [bottoms[i + 1] * width, height],
-      [bottoms[i] * width, height],
+  const edges = [
+    { topX: 0, bottomX: 0 },
+    ...dividers(width, layout),
+    { topX: width, bottomX: width },
+  ];
+  const panels = [];
+  for (let i = 0; i < edges.length - 1; i++) {
+    const left = edges[i];
+    const right = edges[i + 1];
+    panels.push([
+      [left.topX, 0],
+      [right.topX, 0],
+      [right.bottomX, height],
+      [left.bottomX, height],
     ]);
   }
-  return polygons;
+  return panels;
 }
 
-// The axis-aligned box a polygon sits in: photos are cover-fitted to this box
-// and then clipped to the polygon itself.
-export function polygonBounds(polygon) {
+// A copy of a polygon pulled a few pixels in toward its own centre. A
+// photo clipped to the inset shape stops just short of the panel seam,
+// leaving a dark gutter that the white seam line is later centred on.
+export function insetPolygon(points, inset) {
+  let cx = 0;
+  let cy = 0;
+  for (const [x, y] of points) {
+    cx += x;
+    cy += y;
+  }
+  cx /= points.length;
+  cy /= points.length;
+  return points.map(([x, y]) => {
+    const dx = x - cx;
+    const dy = y - cy;
+    const dist = Math.hypot(dx, dy) || 1;
+    const pull = Math.min(inset, dist) / dist;
+    return [x - dx * pull, y - dy * pull];
+  });
+}
+
+// Axis-aligned bounds of a polygon, with its centre — the cover-fit
+// maths in the renderer works in terms of these.
+export function polygonBounds(points) {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (const [x, y] of polygon) {
+  for (const [x, y] of points) {
     if (x < minX) minX = x;
     if (y < minY) minY = y;
     if (x > maxX) maxX = x;
     if (y > maxY) maxY = y;
   }
-  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  return {
+    minX,
+    minY,
+    maxX,
+    maxY,
+    width: maxX - minX,
+    height: maxY - minY,
+    cx: (minX + maxX) / 2,
+    cy: (minY + maxY) / 2,
+  };
 }
 
-// Even-odd ray casting hit test, for clicking a panel to select it.
-export function pointInPolygon(x, y, polygon) {
+// Even-odd hit test, so the editor can tell which panel a click or a
+// drag started in.
+export function pointInPolygon(x, y, points) {
   let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
-    const [xi, yi] = polygon[i];
-    const [xj, yj] = polygon[j];
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const [xi, yi] = points[i];
+    const [xj, yj] = points[j];
     const crosses = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
     if (crosses) inside = !inside;
   }
