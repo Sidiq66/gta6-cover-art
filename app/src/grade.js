@@ -17,14 +17,36 @@ function clamp01(value) {
   return Math.min(1, Math.max(0, value));
 }
 
+// One-click looks: each preset parks the grade slider, the finish
+// texture and the noir tone in one move, so a cover is two clicks from
+// a photo instead of three sliders deep. The editor's Look row and the
+// screenshot scenes both drive the app through these.
+export const LOOK_PRESETS = [
+  { id: 'sunset', name: 'Sunset', grade: 0.12, texture: 0.35, noir: false },
+  { id: 'golden', name: 'Golden', grade: 0.38, texture: 0.5, noir: false },
+  { id: 'neon', name: 'Vice Neon', grade: 0.82, texture: 0.55, noir: false },
+  { id: 'noir', name: 'Noir', grade: 0.55, texture: 0.7, noir: true },
+];
+
+export function lookPreset(id) {
+  return LOOK_PRESETS.find((preset) => preset.id === id) || null;
+}
+
 // The canvas filter string for a grade: each knob of the base correction
-// interpolated between its sunset and neon settings.
-export function gradeFilter(grade) {
+// interpolated between its sunset and neon settings. The noir tone
+// pulls most of the colour back out and leans on contrast instead, so
+// what colour survives reads as signage against the dark.
+export function gradeFilter(grade, noir = false) {
   const g = clamp01(grade);
-  const saturate = lerp(1.12, 1.38, g);
-  const contrast = lerp(1.05, 1.13, g);
-  const brightness = lerp(1.04, 0.99, g);
+  let saturate = lerp(1.12, 1.38, g);
+  let contrast = lerp(1.05, 1.13, g);
+  let brightness = lerp(1.04, 0.99, g);
   const sepia = lerp(0.22, 0.02, g);
+  if (noir) {
+    saturate *= 0.45;
+    contrast *= 1.14;
+    brightness *= 0.96;
+  }
   return (
     `saturate(${saturate.toFixed(3)}) ` +
     `contrast(${contrast.toFixed(3)}) ` +
@@ -65,11 +87,11 @@ function wash(ctx, width, height, grade) {
   ctx.restore();
 }
 
-export function gradePhoto(image, grade) {
+export function gradePhoto(image, grade, noir = false) {
   // Round the grade so dragging the slider reuses nearby cached frames
   // instead of grading the same photograph again for every pixel moved.
   const step = Math.round(clamp01(grade) * 50) / 50;
-  const key = `${image.src}|${step}`;
+  const key = `${image.src}|${step}|${noir ? 'noir' : 'colour'}`;
   const hit = cache.get(key);
   if (hit) return hit;
 
@@ -77,7 +99,7 @@ export function gradePhoto(image, grade) {
   canvas.width = image.naturalWidth || image.width;
   canvas.height = image.naturalHeight || image.height;
   const ctx = canvas.getContext('2d');
-  ctx.filter = gradeFilter(step);
+  ctx.filter = gradeFilter(step, noir);
   ctx.drawImage(image, 0, 0);
   ctx.filter = 'none';
   wash(ctx, canvas.width, canvas.height, step);

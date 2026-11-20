@@ -1,14 +1,21 @@
 // VICE FRAME's editor.
 //
-// The state is one cover: a layout, a size, a grade, a caption, and one
-// photograph per panel, each with its own pan and zoom. The selected
-// panel is where uploads and sample buttons land; clicking a panel on
-// the canvas selects it and dragging pans its photo. Every change just
-// re-runs the renderer — the preview canvas is kept at full export
-// resolution, so the picture on the page is the picture you download.
+// The state is one cover: a layout, a size, a grade and finish, a
+// caption, and one photograph per panel, each with its own pan and
+// zoom. The selected panel is where uploads and sample buttons land;
+// clicking a panel on the canvas selects it and dragging pans its
+// photo. Every change just re-runs the renderer — the preview canvas
+// is kept at full export resolution, so the picture on the page is
+// the picture you download.
 
 import { drawCover } from './render.js';
-import { panelPolygons, panelCount, pointInPolygon } from './panels.js';
+import {
+  panelPolygons,
+  panelCount,
+  pointInPolygon,
+  DEFAULT_SLANT,
+} from './panels.js';
+import { lookPreset } from './grade.js';
 import { runShotScene, loadSample, SAMPLE_ORDER } from './shots.js';
 
 const SIZES = {
@@ -22,8 +29,12 @@ const ctx = canvas.getContext('2d');
 const fileInput = document.getElementById('photo-file');
 const zoomRange = document.getElementById('zoom');
 const gradeRange = document.getElementById('grade');
+const slantRange = document.getElementById('slant');
+const textureRange = document.getElementById('texture');
 const titleInput = document.getElementById('caption-title');
 const subtitleInput = document.getElementById('caption-subtitle');
+const titleSizeRange = document.getElementById('title-size');
+const trackingRange = document.getElementById('tracking');
 const sizeSelect = document.getElementById('size');
 const exportButton = document.getElementById('export');
 const selectedLabel = document.getElementById('selected-panel');
@@ -32,9 +43,15 @@ const state = {
   width: 1080,
   height: 1080,
   layout: 'triptych',
-  grade: 0.35,
+  slant: DEFAULT_SLANT,
+  grade: 0.38,
+  noir: false,
+  texture: 0.5,
+  preset: 'golden',
   title: 'NEON SHORES',
-  subtitle: 'AN ORIGINAL VICE FRAME COVER',
+  subtitle: 'ONE CITY. NO RULES.',
+  titleScale: 1,
+  tracking: 0.02,
   selected: 0,
   showSelection: true,
   panels: [],
@@ -66,7 +83,7 @@ function markActive(buttons, value, attr) {
 }
 
 function setLayout(layout) {
-  if (!['duo', 'triptych', 'quad'].includes(layout)) return;
+  if (!['duo', 'triptych', 'quad', 'penta'].includes(layout)) return;
   state.layout = layout;
   syncPanelCount();
   markActive([...document.querySelectorAll('[data-layout]')], layout, 'layout');
@@ -95,10 +112,65 @@ function setGrade(grade) {
   render();
 }
 
+function setSlant(slant) {
+  state.slant = Math.min(0.12, Math.max(0, slant));
+  slantRange.value = String(state.slant);
+  paintRange(slantRange);
+  render();
+}
+
+function setTexture(texture) {
+  state.texture = Math.min(1, Math.max(0, texture));
+  textureRange.value = String(state.texture);
+  paintRange(textureRange);
+  render();
+}
+
+function setTitleScale(scale) {
+  state.titleScale = Math.min(1.3, Math.max(0.7, scale));
+  titleSizeRange.value = String(state.titleScale);
+  paintRange(titleSizeRange);
+  render();
+}
+
+function setTracking(tracking) {
+  state.tracking = Math.min(0.3, Math.max(0, tracking));
+  trackingRange.value = String(state.tracking);
+  paintRange(trackingRange);
+  render();
+}
+
 function setTitle(title) {
   state.title = title;
   titleInput.value = title;
   render();
+}
+
+function setSubtitle(subtitle) {
+  state.subtitle = subtitle;
+  subtitleInput.value = subtitle;
+  render();
+}
+
+// A Look preset moves the grade, the finish and the noir tone
+// together. Touching any of those controls by hand afterwards drops
+// the preset highlight: the cover is the user's own from then on.
+function applyPreset(id) {
+  const preset = lookPreset(id);
+  if (!preset) return;
+  state.preset = preset.id;
+  state.noir = preset.noir;
+  markActive(
+    [...document.querySelectorAll('[data-preset]')], preset.id, 'preset',
+  );
+  setGrade(preset.grade);
+  setTexture(preset.texture);
+}
+
+function clearPreset() {
+  if (!state.preset) return;
+  state.preset = null;
+  markActive([...document.querySelectorAll('[data-preset]')], '', 'preset');
 }
 
 function setShowSelection(show) {
@@ -140,7 +212,9 @@ let drag = null;
 
 canvas.addEventListener('pointerdown', (event) => {
   const [x, y] = canvasPoint(event);
-  const polygons = panelPolygons(state.width, state.height, state.layout);
+  const polygons = panelPolygons(
+    state.width, state.height, state.layout, state.slant,
+  );
   const hit = polygons.findIndex((points) => pointInPolygon(x, y, points));
   if (hit >= 0 && hit !== state.selected) selectPanel(hit);
   const panel = state.panels[state.selected];
@@ -195,9 +269,27 @@ zoomRange.addEventListener('input', () => {
 });
 
 gradeRange.addEventListener('input', () => {
+  clearPreset();
   state.grade = parseFloat(gradeRange.value);
   paintRange(gradeRange);
   render();
+});
+
+slantRange.addEventListener('input', () => {
+  state.slant = parseFloat(slantRange.value);
+  paintRange(slantRange);
+  render();
+});
+
+textureRange.addEventListener('input', () => {
+  clearPreset();
+  state.texture = parseFloat(textureRange.value);
+  paintRange(textureRange);
+  render();
+});
+
+document.querySelectorAll('[data-preset]').forEach((button) => {
+  button.addEventListener('click', () => applyPreset(button.dataset.preset));
 });
 
 titleInput.addEventListener('input', () => {
@@ -207,6 +299,18 @@ titleInput.addEventListener('input', () => {
 
 subtitleInput.addEventListener('input', () => {
   state.subtitle = subtitleInput.value;
+  render();
+});
+
+titleSizeRange.addEventListener('input', () => {
+  state.titleScale = parseFloat(titleSizeRange.value);
+  paintRange(titleSizeRange);
+  render();
+});
+
+trackingRange.addEventListener('input', () => {
+  state.tracking = parseFloat(trackingRange.value);
+  paintRange(trackingRange);
   render();
 });
 
@@ -234,7 +338,13 @@ const editor = {
   setLayout,
   setSize,
   setGrade,
+  setSlant,
+  setTexture,
+  setTitleScale,
+  setTracking,
   setTitle,
+  setSubtitle,
+  applyPreset,
   setPanelPhoto,
   selectPanel,
   setShowSelection,
@@ -246,11 +356,21 @@ async function boot() {
   titleInput.value = state.title;
   subtitleInput.value = state.subtitle;
   gradeRange.value = String(state.grade);
-  paintRange(gradeRange);
+  slantRange.value = String(state.slant);
+  textureRange.value = String(state.texture);
+  titleSizeRange.value = String(state.titleScale);
+  trackingRange.value = String(state.tracking);
+  markActive(
+    [...document.querySelectorAll('[data-preset]')], state.preset, 'preset',
+  );
+  [gradeRange, slantRange, textureRange, titleSizeRange, trackingRange]
+    .forEach(paintRange);
   paintRange(zoomRange);
   syncPanelCount();
-  // The opening frame: the three samples spread across the triptych.
-  const images = await Promise.all(SAMPLE_ORDER.map(loadSample));
+  // The opening frame: the first samples spread across the triptych —
+  // the driver, the diva and the skyline, one to a panel.
+  const openers = SAMPLE_ORDER.slice(0, panelCount(state.layout));
+  const images = await Promise.all(openers.map(loadSample));
   images.forEach((img, i) => {
     state.panels[i].img = img;
   });

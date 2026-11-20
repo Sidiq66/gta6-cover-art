@@ -36,9 +36,13 @@ body {
   min-height: 100vh;
 }
 
+/* The app fills the viewport: the control column scrolls on its own
+   (below) and the stage never moves, so the preview stays in view
+   however many controls the column grows. */
 .app {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
 }
 
 /* --- control column ------------------------------------------------- */

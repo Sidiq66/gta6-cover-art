@@ -10,11 +10,12 @@ export const LAYOUTS = {
   duo: 2,
   triptych: 3,
   quad: 4,
+  penta: 5,
 };
 
 // How far a divider travels sideways over the full height of the cover,
-// as a fraction of the cover's width.
-const SLANT = 0.06;
+// as a fraction of the cover's width, when the editor does not say.
+export const DEFAULT_SLANT = 0.06;
 
 export function panelCount(layout) {
   return LAYOUTS[layout] ?? LAYOUTS.triptych;
@@ -22,9 +23,9 @@ export function panelCount(layout) {
 
 // The interior divider lines of a layout. Each entry is the pair of x
 // coordinates where one divider crosses the top and the bottom edge.
-export function dividers(width, layout) {
+export function dividers(width, layout, slant = DEFAULT_SLANT) {
   const n = panelCount(layout);
-  const lean = (width * SLANT) / 2;
+  const lean = (width * slant) / 2;
   const lines = [];
   for (let i = 1; i < n; i++) {
     const base = (width * i) / n;
@@ -35,10 +36,10 @@ export function dividers(width, layout) {
 
 // Every panel's polygon, in order, as [x, y] points running clockwise
 // from the panel's top-left corner.
-export function panelPolygons(width, height, layout) {
+export function panelPolygons(width, height, layout, slant = DEFAULT_SLANT) {
   const edges = [
     { topX: 0, bottomX: 0 },
-    ...dividers(width, layout),
+    ...dividers(width, layout, slant),
     { topX: width, bottomX: width },
   ];
   const panels = [];

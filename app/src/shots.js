@@ -4,7 +4,11 @@
 // strips the page down to the cover alone (the stylesheet does that off
 // the shot-cover body class): the named sample fills the first panel and
 // the remaining samples follow it in their usual order, wrapping around
-// a quad. An optional &grade=<0..1> parks the sunset-to-neon slider.
+// a quad or penta. Optional scene dressing: &subtitle=<text>,
+// &grade=<0..1> parks the sunset-to-neon slider, &preset=<id> applies a
+// Look preset instead, and &texture=<0..1>, &slant=<0..0.12>,
+// &titleScale=<0.7..1.3> and &tracking=<0..0.3> set the finish and the
+// lettering.
 //
 // ?shot=editor&photo=<name>&caption=<text> leaves the editor standing
 // with the samples loaded and the caption set, one panel selected.
@@ -12,7 +16,14 @@
 // Both scenes raise window.__shotReady once the cover has genuinely
 // been painted, so a screenshot is never taken of a half-loaded page.
 
-export const SAMPLE_ORDER = ['pier', 'boulevard', 'beach'];
+export const SAMPLE_ORDER = [
+  'driver',
+  'diva',
+  'skyline',
+  'pier',
+  'boulevard',
+  'beach',
+];
 
 export function samplePath(name) {
   return `samples/${name}.jpg`;
@@ -58,7 +69,7 @@ export async function runShotScene(params, editor) {
   const shot = params.get('shot');
   if (shot !== 'cover' && shot !== 'editor') return false;
 
-  const photo = params.get('photo') || 'pier';
+  const photo = params.get('photo') || 'driver';
   const caption = params.get('caption');
   const grade = params.get('grade');
 
@@ -69,8 +80,24 @@ export async function runShotScene(params, editor) {
   if (params.get('layout')) editor.setLayout(params.get('layout'));
   if (params.get('size')) editor.setSize(params.get('size'));
   if (caption !== null) editor.setTitle(caption);
+  if (params.get('subtitle') !== null) {
+    editor.setSubtitle(params.get('subtitle'));
+  }
+  if (params.get('preset')) editor.applyPreset(params.get('preset'));
   if (grade !== null && !Number.isNaN(parseFloat(grade))) {
     editor.setGrade(parseFloat(grade));
+  }
+  const dressing = [
+    ['texture', editor.setTexture],
+    ['slant', editor.setSlant],
+    ['titleScale', editor.setTitleScale],
+    ['tracking', editor.setTracking],
+  ];
+  for (const [name, apply] of dressing) {
+    const value = params.get(name);
+    if (value !== null && !Number.isNaN(parseFloat(value))) {
+      apply(parseFloat(value));
+    }
   }
 
   const names = panelSamples(photo, editor.panelCount());
